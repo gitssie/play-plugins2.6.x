@@ -1,0 +1,19 @@
+
+GET     /assets/*file    controllers.Assets.at(path="/public", file)
+POST    /login           play.api.sysguard.action.SysGuardAction.login
+POST    /sendMsg         play.api.sysguard.action.SysGuardAction.sendMsg
+
+POST    /es/_bulk        play.api.sysguard.action.SysGuardAction.esBulk
+
++deadbolt:subjectPresent
+GET     /                controllers.Default.redirect(to = "/assets/login.html")
++deadbolt:subjectPresent
+GET     /*path           play.api.sysguard.action.SysGuardAction.sysguard(path)
++deadbolt:subjectPresent
+POST    /*path           play.api.sysguard.action.SysGuardAction.sysguard(path)
++deadbolt:subjectPresent
+PUT     /*path           play.api.sysguard.action.SysGuardAction.sysguard(path)
++deadbolt:subjectPresent
+DELETE  /*path           play.api.sysguard.action.SysGuardAction.sysguard(path)
++deadbolt:subjectPresent
+HEAD    /*path           play.api.sysguard.action.SysGuardAction.sysguard(path)

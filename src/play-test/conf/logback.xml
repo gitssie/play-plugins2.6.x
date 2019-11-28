@@ -1,0 +1,41 @@
+<!--
+  ~ Copyright (C) 2009-2017 Lightbend Inc. <https://www.lightbend.com>
+  -->
+<!-- The default logback configuration that Play uses in dev mode if no other configuration is provided -->
+<configuration scan="false" debug="false">
+
+    <conversionRule conversionWord="coloredLevel" converterClass="play.api.libs.logback.ColoredLevel" />
+
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${application.home:-.}/logs/application.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- Daily rollover with compression -->
+            <fileNamePattern>${application.home:-.}/logs/application-log-%d{yyyy-MM-dd}</fileNamePattern>
+            <!-- keep 30 days worth of history -->
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%date{yyyy-MM-dd HH:mm:ss} [%level] from %logger in %thread - %message%n%xException</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <!--pattern>%coloredLevel %logger{15} - %message%n%xException{10}</pattern-->
+            <pattern>%d %coloredLevel [%X{traceId}/%X{spanId}] [%thread] %logger{15} - %message%n%xException{10}</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="play" level="INFO" />
+
+    <logger name="com.gargoylesoftware.htmlunit.javascript" level="OFF" />
+    <!-- https://hibernate.atlassian.net/browse/HV-1323 -->
+    <logger name="org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator" level="ERROR" />
+
+
+    <root level="ERROR">
+        <appender-ref ref="FILE"/>
+        <appender-ref ref="STDOUT" />
+    </root>
+
+</configuration>

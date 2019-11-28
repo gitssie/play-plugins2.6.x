@@ -1,0 +1,34 @@
+<!--
+  ~ Copyright (C) 2009-2017 Lightbend Inc. <https://www.lightbend.com>
+  -->
+<!-- The default logback configuration that Play uses in dev mode if no other configuration is provided -->
+<configuration>
+
+    <conversionRule conversionWord="coloredLevel" converterClass="play.api.libs.logback.ColoredLevel" />
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <!--pattern>%coloredLevel %logger{15} - %message%n%xException{10}</pattern-->
+            <pattern>%d%coloredLevel[%X{traceId}/%X{spanId}]%logger{15}|%thread{1}|%message%n%xException{10}</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="play" level="INFO" />
+
+    <logger name="com.ulopay" level="DEBUG" />
+    <logger name="play.libs.transport" level="DEBUG" />
+
+    <logger name="com.gargoylesoftware.htmlunit.javascript" level="OFF" />
+    <!-- https://hibernate.atlassian.net/browse/HV-1323 -->
+    <logger name="org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator" level="ERROR" />
+
+    <logger name="org.jdbcdslog.ConnectionLogger" level="OFF"  /> <!-- Won' log connections -->
+    <logger name="org.jdbcdslog.StatementLogger"  level="INFO" /> <!-- Will log all statements -->
+    <logger name="org.jdbcdslog.ResultSetLogger"  level="OFF"  /> <!-- Won' log result sets -->
+
+
+    <root level="ERROR">
+        <appender-ref ref="STDOUT" />
+    </root>
+
+</configuration>

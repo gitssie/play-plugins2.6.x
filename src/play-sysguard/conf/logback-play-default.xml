@@ -1,0 +1,40 @@
+<!--
+  ~ Copyright (C) 2009-2017 Lightbend Inc. <https://www.lightbend.com>
+  -->
+<!-- The default logback configuration that Play uses in dev mode if no other configuration is provided -->
+<configuration>
+
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- Daily rollover with compression -->
+            <fileNamePattern>${application.home:-.}/logs/application.log.%d{yyyyMMdd}</fileNamePattern>
+            <!-- keep 30 days worth of history -->
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d[%level][%X{traceId}/%X{spanId}]%logger{15}|%message%n%xException{10}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <!--pattern>%coloredLevel %logger{15} - %message%n%xException{10}</pattern-->
+            <pattern>%d[%level][%X{traceId}/%X{spanId}]%logger{15}|%message%n%xException{10}</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="play" level="INFO" />
+
+    <logger name="com.ulopay" level="DEBUG" />
+    <logger name="play.libs.transport" level="DEBUG" />
+
+    <logger name="com.gargoylesoftware.htmlunit.javascript" level="OFF" />
+    <!-- https://hibernate.atlassian.net/browse/HV-1323 -->
+    <logger name="org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator" level="ERROR" />
+
+
+    <root level="ERROR">
+        <appender-ref ref="FILE" />
+    </root>
+
+</configuration>

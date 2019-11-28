@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>Monitoring System</title>
+        <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
+        <link rel="stylesheet" href="css/bootstrap.min.css"/>
+        <link href="css/font-awesome.min.css" rel="stylesheet"/>
+        <link rel="stylesheet" href="css/main-style.min.css"/>
+        <link rel="shortcut icon" href="/assets/img/favicon.ico" />
+    </head>
+    <body class="skin-blue login-page">
+        <div class="box-login">
+            <div class="box-login-body">
+                <h3><span><b><img class="logo" src="img/play_icon_full_color.png" /></b>Monitoring System</span></h3>
+                <p class="box-login-msg"></p>
+                <form class="login-form" action="index.html" method="post">
+                    <div class="form-group input-group">
+                        <span class="input-group-addon"><i class="glyphicon glyphicon-user"></i></span>
+                        <input class="form-control" type="text" name="email" placeholder="Username" autofocus="" data-form-un="1515844768345.994">
+                    </div>
+                    <div class="form-group input-group">
+                        <span class="input-group-addon"><i class="glyphicon glyphicon-lock"></i></span>
+                        <input class="form-control" type="password" name="password" placeholder="Password" data-form-pw="1515844768345.994">
+                    </div>
+                    <div class="form-group input-group has-error" id="has-error">
+                        <label class="control-label"></label>
+                    </div>
+                    <div class="form-group form-action">
+                        <button type="submit" id="login-btn" class="btn btn-block btn-default" data-form-sbm="1515844768345.994" style="pointer-events: auto;">Sign In</button>
+                    </div>
+                    <div class="form-group form-action redirect-action">
+                        <input type="radio" name="redirect" checked="true" value="/kibana"/><img src="img/kibana-log.svg"/>
+                        <input type="radio" name="redirect" value="/zipkin/"/><img src="img/zipkin-logo.jpg"/>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!-- JS scripts -->
+        <script src="js/jquery-2.2.3.min.js"></script>
+        <script src="js/bootstrap.min.js"></script>
+        <script src="js/application.js"></script>
+</body></html>

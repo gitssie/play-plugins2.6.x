@@ -1,0 +1,126 @@
+#!/bin/bash
+
+CMD=$1
+ISMOND=$2
+NOHUP=nohup
+PS=ps
+
+# default java
+JAVA_CMD=java
+MON=mon
+START_CMD="sh play"
+get_pid() {
+    cat "$1" 2> /dev/null
+}
+pid_running() {
+    kill -0 $1 2> /dev/null
+}
+
+die() {
+    echo $*
+    exit 1
+}
+
+#check jdk variables from environment if set
+#JAVA_HOME=/opt/jdk1.7.0_67
+if [ -n "$JAVA_HOME" ]
+then
+    # try to use $JAVA_HOME
+    if [ -x "$JAVA_HOME"/bin/java ]
+    then
+        JAVA_CMD="$JAVA_HOME"/bin/java
+    else
+        die "$JAVA_HOME"/bin/java is not executable
+    fi
+fi
+
+# take variables from environment if set
+PLAY_PID=${PLAY_PID:=RUNNING_PID}
+MOND_PID="MONDING_PID"
+LOG_FILE="/dev/null"
+
+
+execute() {
+	#check mon auto manage pid if mon file exists
+    if [ -f $MON ] && [[ $ISMOND = mon ]]
+	then
+		$MON "$NOHUP $START_CMD >> $LOG_FILE 2>> $LOG_FILE" -d -m $MOND_PID
+	else
+		$NOHUP $START_CMD >> $LOG_FILE 2>> $LOG_FILE &
+	fi
+}
+
+start() {
+    echo "Starting play-server ..."
+	execute
+	#$NOHUP $START_CMD >> $LOG_FILE 2>> $LOG_FILE &
+}
+
+run() {
+    echo "Running play-server ..."
+    sh start
+}
+
+stop() {
+
+	MID=$(get_pid $MOND_PID)
+	kill -9 $MID 2> /dev/null
+	rm -f "${MOND_PID}" 2> /dev/null
+	
+    if [ ! -f "${PLAY_PID}" ]; then
+      die "Not stopping. PID file not found: ${PLAY_PID}"
+    fi
+	
+	PID=$(get_pid $PLAY_PID)
+
+    echo "Stopping play-server ($PID) ..."
+    echo "Waiting for play-server to halt."
+	
+    kill $PID 2> /dev/null
+
+    while "$PS" -p $PID > /dev/null; do sleep 1; done;
+    rm -f "${PLAY_PID}" 2> /dev/null
+
+    echo "play-server stopped"
+}
+
+restart() {
+    echo "Restarting play-server ..."
+    stop
+    start
+}
+
+status() {
+    PID=$(get_pid $PLAY_PID)
+    if [ ! -z $PID ]; then
+        if pid_running $PID; then
+            echo "play-server running with PID ${PID}"
+            return 0
+        else
+            rm "${PLAY_PID}"
+            die "Removed stale PID file ${PLAY_PID} with ${PID}."
+        fi
+    fi
+
+    die "play-server not running"
+}
+
+case "$CMD" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    restart)
+        restart
+        ;;
+    status)
+        status
+        ;;
+    run)
+        run
+        ;;
+    *)
+        echo "Usage $0 {start|stop|restart|status|run}"
+esac

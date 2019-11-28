@@ -1,0 +1,5 @@
+
+
+POST     /sftp/downlaod              play.api.httpproxy.SftpHttpProxy.download
+
+POST     /email/send                 play.api.httpproxy.EmailHttpProxy.sendMail

@@ -1,0 +1,25 @@
+# Routes
+# This file defines all application routes (Higher priority routes first)
+# ~~~~
+
+# An example controller showing a sample home page
+
+GET /index                com.github.test.Application.index
+
+POST  /index                com.github.test.Application.index
+
+GET /login                  com.github.test.Application.login(username:String,password:String)
+
+GET /kafka/publish          com.github.test.KafkaAction.publish
+
++subscribe
+GET /kafka/subscribe        com.github.test.KafkaAction.subscribe
+
+#deadbolt:subjectPresent
+GET /md5                    com.github.test.Application.md5
+
+# Map static resources from the /public folder to the /assets URL path
+GET /upload/*file            play.api.assets.Assets.at(file)
+#GET /assets/*file           controllers.Assets.at(path="/public", file)
+
+-> /hello  inject.hello.Routes
