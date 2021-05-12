@@ -2,13 +2,13 @@ package play.api.assets
 
 import java.io.FileInputStream
 import java.net.URLEncoder
-import javax.inject.{Inject, Singleton}
 
+import javax.inject.{Inject, Singleton}
 import com.google.common.io.Files
 import play.api.libs.json.Json
 import play.api.mvc._
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class Assets @Inject() (store:AssetsStore,implicit val ec:ExecutionContext) extends InjectedController{
@@ -26,22 +26,23 @@ class Assets @Inject() (store:AssetsStore,implicit val ec:ExecutionContext) exte
     }
   }
 
-  def upload = Action(parse.multipartFormData) { request =>
-    request.body.file("file").map { file =>
-      val path = store.save(file.filename,new FileInputStream(file.ref.toFile))
-      val onode = play.libs.Json.newObject()
-      val data =  play.libs.Json.newObject()
-      data.put("key",path)
-      data.put("realPath",path)
-      data.put("url",path)
-      onode.put("status",200)
-      onode.set("data",data)
-      Ok(Json.toJson(onode))
+  def upload = Action.async(parse.multipartFormData) { request =>
+    request.body.files.headOption.map { file =>
+      store.asyncSave(file.filename,new FileInputStream(file.ref.toFile)).map(path => {
+        val onode = play.libs.Json.newObject()
+        val data =  play.libs.Json.newObject()
+        data.put("key",path)
+        data.put("realPath",path)
+        data.put("url",store.getURI(path))
+        onode.put("status",200)
+        onode.set("data",data)
+        Ok(Json.toJson(onode))
+      })
     }.getOrElse {
       val onode = play.libs.Json.newObject()
       onode.put("status",400)
       onode.put("message","Missing file")
-      Ok(Json.toJson(onode))
+      Future.successful(Ok(Json.toJson(onode)))
     }
   }
 }

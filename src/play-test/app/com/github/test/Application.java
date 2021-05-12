@@ -75,6 +75,8 @@ public class Application extends Controller {
     private Assets as;
     @Inject
     private AssetsStore assetsStore;
+    @Inject
+    private ServiceMain serviceMain;
 
     public Result addConfig(){
         SimpleSubject subject = authz.getSubject(session());
@@ -95,26 +97,34 @@ public class Application extends Controller {
 
 
     @Traced
-    public Result index() throws InterruptedException {
+    public Promise<Result> index() throws InterruptedException {
 
         Http.Headers headers = request().getHeaders();
         headers.toMap();
-        Form<TestForm> dform = data.form(TestForm.class).bindFromRequest();
-        if(dform.hasErrors()){
-            return data.bad(dform);
-        }
-        TestForm testForm = dform.get();
+//        Form<TestForm> dform = data.form(TestForm.class).bindFromRequest();
+//        if(dform.hasErrors()){
+//            return data.bad(dform);
+//        }
+//        TestForm testForm = dform.get();
 
 //        ConfValue confValue = new ConfValue("hello","name","text","","我是中文",true,new Date());
 //
 //        configManager.put("hello",confValue);
 
         Map<String,Object> map = Maps.newHashMap();
-        map.put("hello",testForm.getInnerForm().getHello());
+        map.put("hello",serviceMain.sayHello());
         map.put("date",new Date());
-        map.put("uriSpec", client.getServiceInstance().getUriSpec());
 
-        return data.ok(map);
+        return Promise.pure(map).map(r -> {
+            logger.debug("Jack1.....");
+            return r;
+        }).map(r -> {
+            logger.debug("Black2.....");
+            return r;
+        }).map(m -> {
+            logger.debug("Result.....");
+            return data.ok(m);
+        });
 
         /**
         final Session session = authz.getSession(session());

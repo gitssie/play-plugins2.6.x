@@ -27,6 +27,7 @@
     </appender>
 
     <logger name="play" level="INFO" />
+    <logger name="com.github.test" level="DEBUG" />
 
     <logger name="com.gargoylesoftware.htmlunit.javascript" level="OFF" />
     <!-- https://hibernate.atlassian.net/browse/HV-1323 -->

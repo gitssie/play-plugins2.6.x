@@ -3,6 +3,7 @@ package play.api.rest;
 import brave.Tracer;
 import brave.Tracing;
 import com.google.common.collect.Maps;
+import com.netflix.loadbalancer.ILoadBalancer;
 import okhttp3.Call;
 import okhttp3.OkHttpClient;
 import org.apache.commons.lang3.StringUtils;
@@ -42,6 +43,7 @@ public class Rest {
     private Tracer tracer;
     private PromiseHttpClient callFactory;
     private ExecutionContext callbackExecutor;
+    private ILoadBalancer loadBalancer;
     private RequestConfig requestConfig;
     private String baseUrl;
     private boolean validateEagerly;
@@ -306,6 +308,7 @@ public class Rest {
         private String baseUrl;
         private final List<Converter.Factory> converterFactories = new ArrayList<>();
         private ExecutionContext callbackExecutor;
+        private ILoadBalancer loadBalancer;
         private boolean validateEagerly;
 
         public Builder() {}
@@ -368,6 +371,11 @@ public class Rest {
             return this;
         }
 
+        public Builder loadBalancer(ILoadBalancer loadBalancer) {
+            this.loadBalancer = loadBalancer;
+            return this;
+        }
+
         /** Returns a modifiable list of converter factories. */
         public List<Converter.Factory> converterFactories() {
             return this.converterFactories;
@@ -401,7 +409,9 @@ public class Rest {
             converterFactories.add(new BuiltInConverters());
             converterFactories.addAll(this.converterFactories);
 
-            return new Rest(tracer,callFactory, baseUrl, unmodifiableList(converterFactories),callbackExecutor, validateEagerly,config);
+            Rest rest = new Rest(tracer,callFactory, baseUrl, unmodifiableList(converterFactories),callbackExecutor, validateEagerly,config);
+            rest.setLoadBalancer(loadBalancer);
+            return rest;
         }
     }
 
@@ -411,5 +421,13 @@ public class Rest {
 
     public ExecutionContext getCallbackExecutor() {
         return callbackExecutor;
+    }
+
+    public void setLoadBalancer(ILoadBalancer loadBalancer) {
+        this.loadBalancer = loadBalancer;
+    }
+
+    public ILoadBalancer getLoadBalancer() {
+        return loadBalancer;
     }
 }

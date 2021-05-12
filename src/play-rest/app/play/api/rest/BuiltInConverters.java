@@ -17,6 +17,7 @@ package play.api.rest;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import play.api.rest.converter.StringConverterFactory;
 import play.api.rest.http.Streaming;
 import play.libs.transport.http.HTTPUtils;
 
@@ -45,7 +46,7 @@ final class BuiltInConverters extends Converter.Factory {
   public Converter<?, HttpEntity> requestBodyConverter(Type type,
       Annotation[] parameterAnnotations, Annotation[] methodAnnotations, Rest retrofit) {
     if (HttpEntity.class.isAssignableFrom(Utils.getRawType(type))) {
-      return RequestBodyConverter.INSTANCE;
+        return RequestBodyConverter.INSTANCE;
     }
     return null;
   }

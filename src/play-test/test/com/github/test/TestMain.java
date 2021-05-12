@@ -35,6 +35,7 @@ import scala.concurrent.duration.Duration;
 import sun.misc.IOUtils;
 
 import java.io.*;
+import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
@@ -229,19 +230,9 @@ public class TestMain {
 
     @Test
     public void testApp() throws IOException{
-
-        Map<String,String> map1 = toMaps1();
-        Map<String,String> map2 = toMaps2();
-
-        for(Map.Entry<String,String> e: map2.entrySet()){
-            if(map1.containsKey(e.getKey())){
-                map1.remove(e.getKey());
-            }
-        }
-
-        for(Map.Entry<String,String> e: map1.entrySet()){
-            System.out.println(e.getValue());
-        }
+        String x = "202210000000000001519";
+        System.out.println(x);
+        System.out.println(Long.valueOf(x));
     }
 
     public Map<String,String> toMaps1() throws IOException{
@@ -277,6 +268,14 @@ public class TestMain {
 
         return map;
 
+    }
+
+    @Test
+    public void testURL() throws Exception{
+        String x = "s3:http://045c1ae70c6e2196bc34:5cf5c13f587db1b7ff1d449c7c6c9602947410e3@172.17.20.231:20628/?style=path";
+        URI url = new URI(x);
+
+        System.out.println(url);
     }
 
     interface SFTPApi{

@@ -3,8 +3,10 @@ package play.api.assets
 import java.io._
 import java.net.URL
 import java.util.{Date, UUID}
+
 import javax.inject.{Inject, Singleton}
 import java.nio.file.{Files => JFiles}
+
 import com.google.common.io._
 import controllers.{AssetsConfiguration, DefaultAssetsMetadata, Assets => PAssets}
 import org.apache.commons.lang3.StringUtils
@@ -12,6 +14,8 @@ import org.apache.commons.lang3.time.FastDateFormat
 import play.api.http.{FileMimeTypes, HttpErrorHandler}
 import play.api.libs.crypto.CookieSigner
 import play.api.{Configuration, Environment}
+
+import scala.concurrent.Future
 
 @Singleton
 class FileAssetsStore @Inject() (conf:Configuration,
@@ -86,6 +90,9 @@ class FileAssetsStore @Inject() (conf:Configuration,
     fileName
   }
 
+  override def asyncSave(fileName :String,in :InputStream):Future[String] = Future.successful(save(fileName,in))
+
+
   override def delete(path: String):Boolean = {
     val resourceFile = getFile(path)
     val pathFile = baseDir
@@ -139,6 +146,9 @@ class FileAssetsStore @Inject() (conf:Configuration,
     }
     fileName
   }
+
+  override def getURI(path: String): String = path
+
   override def getWorkdir():File = {
     val file = env.getFile(workdirPath)
     if(!file.exists()){

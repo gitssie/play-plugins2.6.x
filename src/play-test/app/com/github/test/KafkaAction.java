@@ -15,10 +15,9 @@ public class KafkaAction extends Controller{
 
     private Kafka kafka;
 
-    @Inject
-    public KafkaAction(Kafka kafka){
-        this.kafka = kafka;
-        kafka.subscribe("play.test.topics",String.class,this::onMessage);
+    //@Inject
+    public KafkaAction(){
+        //kafka.subscribe("play.test.topics",String.class,this::onMessage);
     }
 
     public void onMessage(String msg){

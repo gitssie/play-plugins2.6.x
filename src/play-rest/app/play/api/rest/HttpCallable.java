@@ -27,7 +27,7 @@ public class HttpCallable<T> implements Callable<Promise<T>> {
         HttpUriRequest req = serviceMethod.toCall(args);
         HTTPInvokerContext context = new HTTPInvokerContext(rest.callFactory());
         context.setExecutionContext(rest.getCallbackExecutor());
-
+        context.setLoadBalancer(rest.getLoadBalancer());
         Promise<HttpResponse> result = HTTP.makeHTTP(rest.tracer(),req,new RawBodyHandler(),context);
         return result.map((resp) -> {
             int code = resp.getStatusLine().getStatusCode();

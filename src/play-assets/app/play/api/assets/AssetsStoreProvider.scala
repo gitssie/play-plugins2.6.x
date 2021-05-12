@@ -7,7 +7,9 @@ import play.api.{Configuration, Environment}
 import play.utils.Reflect
 
 class AssetsStoreProvider  @Inject() (inject:Injector,env:Environment,conf:Configuration) extends Provider[AssetsStore]{
-  val defaultCls = Map("file" -> classOf[FileAssetsStore])
+  val defaultCls = Map("file" -> classOf[FileAssetsStore],
+                       "s3" -> classOf[ObjectStorage])
+
   override def get():AssetsStore = conf.getOptional[String]("play.assets.store.class").map(clazz => {
     try{
       defaultCls.find(_._1 == clazz).map(c => inject.instanceOf(c._2)).getOrElse{

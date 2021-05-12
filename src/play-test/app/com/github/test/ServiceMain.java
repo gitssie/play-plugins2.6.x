@@ -22,7 +22,7 @@ public class ServiceMain extends Controller implements TaskScheduler{
         this.tracer = tracer;
     }
 
-    @Traced
+    //@Traced
     public String sayHello(){
         return "My trace Id " +HexCodec.toLowerHex(tracer.currentSpan().context().traceId()) + ",spanId:"+ HexCodec.toLowerHex(tracer.currentSpan().context().spanId());
     }

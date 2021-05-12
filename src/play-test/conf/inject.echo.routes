@@ -22,4 +22,4 @@ GET /md5                    com.github.test.Application.md5
 GET /upload/*file            play.api.assets.Assets.at(file)
 #GET /assets/*file           controllers.Assets.at(path="/public", file)
 
--> /hello  inject.hello.Routes
+POST /upload                 play.api.assets.Assets.upload
