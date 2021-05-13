@@ -2,7 +2,7 @@ name := """play-assets"""
 
 organization := "com.github.gitssie"
 
-version := "2.6.24"
+version := "2.6.26"
 
 scalaVersion := "2.12.2"
 

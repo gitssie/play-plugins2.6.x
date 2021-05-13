@@ -2,20 +2,25 @@ package play.api.assets
 
 import java.io._
 import java.net.URL
+import java.nio.file.{Files => JFiles}
 import java.util.{Date, UUID}
 
-import javax.inject.{Inject, Singleton}
-import java.nio.file.{Files => JFiles}
-
+import akka.NotUsed
+import akka.stream.Materializer
+import akka.stream.scaladsl.{FileIO, Sink, Source, StreamConverters}
+import akka.util.ByteString
 import com.google.common.io._
 import controllers.{AssetsConfiguration, DefaultAssetsMetadata, Assets => PAssets}
+import javax.inject.{Inject, Singleton}
 import org.apache.commons.lang3.StringUtils
 import org.apache.commons.lang3.time.FastDateFormat
 import play.api.http.{FileMimeTypes, HttpErrorHandler}
 import play.api.libs.crypto.CookieSigner
 import play.api.{Configuration, Environment}
 
-import scala.concurrent.Future
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class FileAssetsStore @Inject() (conf:Configuration,
@@ -23,6 +28,8 @@ class FileAssetsStore @Inject() (conf:Configuration,
                                  singer:CookieSigner,
                                  errorHandler: HttpErrorHandler,
                                  config: AssetsConfiguration,
+                                 implicit val ec: ExecutionContext,
+                                 implicit val mat: Materializer,
                                  fileMimeTypes: FileMimeTypes) extends AssetsStore {
 
   val baseDirPath = conf.getOptional[String]("play.assets.store.file.path").getOrElse("assets")
@@ -65,32 +72,28 @@ class FileAssetsStore @Inject() (conf:Configuration,
 
   override def save(in: InputStream):String = save("",in)
 
-  @throws[IOException]
-  private def copy(source: InputStream, sink: OutputStream):Long = {
-    var nread = 0L
-    val buf = new Array[Byte](8192)
-    var n = 1
-    while(n > 0){
-      n = source.read(buf)
-      if(n > 0){
-        sink.write(buf, 0, n)
-      }
-    }
-    source.close()
-    sink.close()
-    nread
+  override def save(name: String, in: InputStream):String = {
+    Await.result(asyncSave(name,in),Duration.Inf)
   }
 
-
-  override def save(name: String, in: InputStream):String = {
+  override def asyncSave(name :String,in :InputStream):Future[String] = {
     val fileName = getFileName("",name)
     val file = getFile(fileName)
     Files.createParentDirs(file)
-    copy(in,new FileOutputStream(file))
-    fileName
+    val source = StreamConverters.fromInputStream(() => in)
+    source.to(FileIO.toPath(file.toPath)).run().transform({
+      case Success(r) => {
+        if(r.status.isFailure){
+          if(file.exists()) file.delete()
+        }
+        Try(fileName)
+      }
+      case Failure(e) => {
+        if(file.exists()) file.delete()
+        Try(throw e)
+      }
+    })
   }
-
-  override def asyncSave(fileName :String,in :InputStream):Future[String] = Future.successful(save(fileName,in))
 
 
   override def delete(path: String):Boolean = {
@@ -105,25 +108,19 @@ class FileAssetsStore @Inject() (conf:Configuration,
     }
   }
 
-  override def getSource(path: String):ByteSource = {
+  override def getSource(path: String):Source[ByteString, NotUsed] = {
     val resourceFile = getFile(path)
     val pathFile = baseDir
     if (!resourceFile.getCanonicalPath.startsWith(pathFile.getCanonicalPath)) {
-      null
+      Source.failed(throw new FileNotFoundException)
     } else if(resourceFile.isFile && resourceFile.exists()){
-      Files.asByteSource(resourceFile)
+      FileIO.fromPath(resourceFile.toPath).mapMaterializedValue(_ => NotUsed)
     }else{
-      null
+      Source.failed(throw new FileNotFoundException)
     }
   }
 
   override def at(path: String) = assets.at(baseDir.getPath,path)
-
-  override def getSink(name: String,isTmp: Boolean):(String,ByteSink) = {
-    val (fileName,file) = getFile(name,isTmp)
-    val sink = Files.asByteSink(file)
-    (fileName -> sink)
-  }
 
   def getFile(name: String,isTmp: Boolean): (String,File) ={
     val fileName = isTmp match {
@@ -141,10 +138,28 @@ class FileAssetsStore @Inject() (conf:Configuration,
       JFiles.createSymbolicLink(file.toPath,path.toPath)
     }catch{
       case e:UnsupportedOperationException => {
-          copy(new BufferedInputStream(new FileInputStream(path)),new BufferedOutputStream(new FileOutputStream(file)))
+        Files.copy(path,file)
       }
     }
     fileName
+  }
+
+  override def getSink(name: String):(String,Sink[ByteString, Future[NotUsed]]) = getSink(name,false)
+
+  override def getSink(name:String,isTmp: Boolean):(String,Sink[ByteString, Future[NotUsed]]) = {
+    val (fileName, file) = getFile(name, isTmp)
+    fileName -> FileIO.toPath(file.toPath).mapMaterializedValue(_.transform{
+      case Success(r) => {
+        if(r.status.isFailure){
+          if(file.exists()) file.delete()
+        }
+        Try(NotUsed)
+      }
+      case Failure(e) => {
+        if(file.exists()) file.delete()
+        Try(throw e)
+      }
+    })
   }
 
   override def getURI(path: String): String = path

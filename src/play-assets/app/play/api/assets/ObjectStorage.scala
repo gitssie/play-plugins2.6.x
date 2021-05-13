@@ -1,13 +1,13 @@
 package play.api.assets
-import java.io.{File, InputStream}
+import java.io.{File, FileInputStream, InputStream}
 import java.nio.charset.Charset
 import java.util.{Date, UUID}
 
 import akka.NotUsed
 import akka.stream.Materializer
-import akka.stream.scaladsl.{Source, StreamConverters}
+import akka.stream.scaladsl.{Sink, Source, StreamConverters}
 import akka.util.ByteString
-import com.google.common.io.{ByteSink, ByteSource, Files}
+import com.google.common.io.Files
 import com.zengularity.benji.s3.S3
 import com.zengularity.benji.{ObjectStorage => OSS}
 import controllers.AssetsConfiguration
@@ -22,7 +22,8 @@ import play.api.libs.ws.ahc.StandaloneAhcWSClient
 import play.api.mvc._
 import play.utils.UriEncoding
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 @Singleton
 class ObjectStorage @Inject() (conf:Configuration,
@@ -51,21 +52,42 @@ class ObjectStorage @Inject() (conf:Configuration,
     }
   }
 
-  override def link(file: File): String =  throw new UnsupportedOperationException
+  override def link(file: File): String =  save(file.getName,new FileInputStream(file))
 
-  override def getSink(fileName: String, isTmp: Boolean): (String, ByteSink) =  throw new UnsupportedOperationException
+  def move(from:String,to:String):Future[Unit] = {
+    val (b1,o1) = bucketAndObj(from)
+    val (b2,o2) = bucketAndObj(to)
+    s3.s3.bucket(b1).obj(o1).moveTo(s3.s3.bucket(b2).obj(o2))
+  }
 
-  override def save(in: InputStream): String =  throw new UnsupportedOperationException
+  def copy(from:String,to:String):Future[Unit] = {
+    val (b1,o1) = bucketAndObj(from)
+    val (b2,o2) = bucketAndObj(to)
+    s3.s3.bucket(b1).obj(o1).copyTo(s3.s3.bucket(b2).obj(o2))
+  }
+
+  override def save(in: InputStream): String =  save("",in)
 
   override def asyncSave(fileName :String,in :InputStream):Future[String] = {
     implicit val w = DefaultBodyWritables.writeableOf_Bytes
     val source = StreamConverters.fromInputStream(() => in)
     val file = getFileName("",fileName)
     val uploaded: Future[NotUsed] = source.runWith(s3.s3.bucket(s3.bucket).obj(file).put[ByteString])
-    uploaded.map(_ => s"/${s3.bucket}/${file}")
+    uploaded.map(_ => s"${s3.bucket}/${file}")
   }
 
-  override def save(fileName: String, in: InputStream): String =  throw new UnsupportedOperationException
+  override def getSink(fileName:String,t:Boolean):(String,Sink[ByteString, Future[NotUsed]]) = getSink(fileName)
+
+  override def getSink(fileName:String):(String,Sink[ByteString, Future[NotUsed]]) = {
+    implicit val w = DefaultBodyWritables.writeableOf_Bytes
+    val file = getFileName("",fileName)
+    val sink = s3.s3.bucket(s3.bucket).obj(file).put[ByteString]
+    (s"${s3.bucket}/${file}") -> sink
+  }
+
+  override def save(fileName: String, in: InputStream): String =  {
+    Await.result(asyncSave(fileName,in),Duration.Inf)
+  }
 
   private def getFileName(prefix:String,fileName:String):String = {
     var randomName = FastDateFormat.getInstance("yyyyMMdd").format(new Date()) + "/" + singer.sign(UUID.randomUUID().toString)
@@ -81,22 +103,36 @@ class ObjectStorage @Inject() (conf:Configuration,
     randomName
   }
 
-  override def delete(path: String): Boolean =  throw new UnsupportedOperationException
+  def asyncDelete(file:String):Future[Boolean] = {
+    val (bucket,obj) = bucketAndObj(file)
+    s3.s3.bucket(bucket).obj(obj).delete().map(_ => true)
+  }
 
-  override def getSource(path: String): ByteSource =  throw new UnsupportedOperationException
+  override def delete(file: String): Boolean = {
+    Await.result(asyncDelete(file),Duration.Inf)
+  }
+
+  override def getSource(file: String): Source[ByteString, NotUsed] = {
+    val (bucket,obj) = bucketAndObj(file)
+    s3.s3.bucket(bucket).obj(obj).get()
+  }
+
+  def bucketAndObj(file:String):(String,String) = {
+    val path = UriEncoding.decodePath(file,Charset.defaultCharset()).split("/")
+    if(path.size == 1) s3.bucket -> file else path.head -> path.drop(1).mkString("/")
+  }
 
   override def at(file: String): Action[AnyContent] = builder {
-    val path = UriEncoding.decodePath(file,Charset.defaultCharset()).split("/")
-    val (bucket,obj) = if(path.size == 1) s3.bucket -> file else path.head -> path.drop(1).mkString("/")
+    val (bucket,obj) = bucketAndObj(file)
     val data:Source[ByteString, NotUsed] = s3.s3.bucket(bucket).obj(obj).get()
     val entity = HttpEntity.Chunked(
       data.map(r => HttpChunk.Chunk(r)),
-      fileMimeTypes.forFileName(path.last).orElse(Some(ContentTypes.BINARY))
+      fileMimeTypes.forFileName(file).orElse(Some(ContentTypes.BINARY))
     )
     Results.Ok.sendEntity(entity)
   }
 
-  override def getURI(path: String): String = frontUri.getOrElse(s3.uri) + path
+  override def getURI(path: String): String = frontUri.getOrElse(s3.uri) + "/" + path
 
   override def getWorkdir(): File = throw new UnsupportedOperationException
 

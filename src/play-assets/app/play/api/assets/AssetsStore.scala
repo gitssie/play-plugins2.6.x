@@ -2,7 +2,9 @@ package play.api.assets
 
 import java.io.{File, InputStream}
 
-import com.google.common.io.{ByteSink, ByteSource}
+import akka.NotUsed
+import akka.stream.scaladsl.{Sink, Source}
+import akka.util.ByteString
 import play.api.mvc.{Action, AnyContent}
 
 import scala.concurrent.Future
@@ -11,7 +13,9 @@ trait AssetsStore {
 
   def link(file:File):String
 
-  def getSink(fileName :String,isTmp:Boolean):(String,ByteSink)
+  def getSink(fileName :String,isTmp:Boolean):(String,Sink[ByteString, Future[NotUsed]])
+
+  def getSink(fileName:String):(String,Sink[ByteString, Future[NotUsed]])
 
   def save(in :InputStream):String  //path
 
@@ -21,7 +25,7 @@ trait AssetsStore {
 
   def delete(path :String):Boolean  //path
 
-  def getSource(path :String):ByteSource  //path
+  def getSource(path :String):Source[ByteString, NotUsed]
 
   def at(path:String): Action[AnyContent]
 
